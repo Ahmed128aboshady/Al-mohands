@@ -151,9 +151,13 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < 36; i++) {
             const cell = document.createElement('div');
             cell.className = 'grid-cell';
+            if (gridData[i] !== 'empty') {
+                cell.className = `grid-cell ${gridData[i]}`;
+            }
             cell.setAttribute('data-idx', i);
             
-            cell.addEventListener('click', () => {
+            const handleCellToggle = (e) => {
+                if (e && e.cancelable) e.preventDefault();
                 isUsingCustomGrid = true;
                 
                 if (gridData[i] === currentBrush) {
@@ -165,7 +169,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 
                 update3DFromSketchpad();
-            });
+            };
+
+            cell.addEventListener('pointerdown', handleCellToggle);
             
             gridBoard.appendChild(cell);
         }
@@ -1081,6 +1087,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             controls.target.set(0, 0.5, 0);
             calculatePlannerEstimate();
+            if (typeof window.requestSceneRender === 'function') {
+                window.requestSceneRender();
+            }
         } catch (err) {
             console.error("Error in update3DFromSketchpad:", err);
             alert("خطأ أثناء تحديث الرسم: " + err.message);
@@ -1354,6 +1363,10 @@ document.addEventListener('DOMContentLoaded', () => {
             createCabinetUnit(-0.4, 0.4, 0, true);
             createCabinetUnit(0.4, 0.4, 0, true);
             controls.target.set(0, 0.5, -0.4);
+        }
+
+        if (typeof window.requestSceneRender === 'function') {
+            window.requestSceneRender();
         }
     }
 
