@@ -1,4 +1,4 @@
-﻿/* ==========================================================================
+/* ==========================================================================
    المهندس للألوميتال والزجاج - برمجة الصفحة الرئيسية (script.js)
    ========================================================================== */
 
@@ -82,6 +82,53 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     });
+
+    // ==========================================
+    // 3.5. نافذة تكبير صور المعرض (Portfolio Lightbox Modal)
+    // ==========================================
+    const lightboxModal = document.getElementById('lightbox-modal');
+    const lightboxImg = document.getElementById('lightbox-img');
+    const lightboxCaption = document.getElementById('lightbox-caption');
+    const lightboxClose = document.getElementById('lightbox-close');
+
+    if (lightboxModal) {
+        document.querySelectorAll('.portfolio-item').forEach(item => {
+            const btn = item.querySelector('.view-project-btn');
+            const img = item.querySelector('img');
+            const title = item.querySelector('h4');
+
+            const openLightbox = (e) => {
+                e.stopPropagation();
+                if (img) {
+                    lightboxImg.src = img.src;
+                    lightboxCaption.textContent = title ? title.textContent : img.alt;
+                    lightboxModal.style.display = 'flex';
+                }
+            };
+
+            if (btn) btn.addEventListener('click', openLightbox);
+            const imageBox = item.querySelector('.portfolio-image-box');
+            if (imageBox) imageBox.addEventListener('click', openLightbox);
+        });
+
+        const closeLightbox = () => {
+            lightboxModal.style.display = 'none';
+        };
+
+        if (lightboxClose) lightboxClose.addEventListener('click', closeLightbox);
+
+        lightboxModal.addEventListener('click', (e) => {
+            if (e.target === lightboxModal) {
+                closeLightbox();
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && lightboxModal.style.display === 'flex') {
+                closeLightbox();
+            }
+        });
+    }
 
     // ==========================================
     // 4. حاسبة الأسعار التفاعلية (EGP Pricing Calculator)
