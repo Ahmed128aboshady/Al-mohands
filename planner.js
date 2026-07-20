@@ -141,8 +141,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentBrush = 'cabinet';
     let isUsingCustomGrid = false;
 
-    let scene, camera, renderer, controls, kitchenGroup;
+    let scene, camera, renderer, controls, kitchenGroup, dirLight;
     let is3DInitialized = false;
+    const isMobileDevice = typeof window !== 'undefined' && (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (window.innerWidth <= 768) || ('ontouchstart' in window));
+    let isFastPerfMode = isMobileDevice;
 
     function createGridBoard() {
         gridBoard.innerHTML = '';
