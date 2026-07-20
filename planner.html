@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <script>
+        window.addEventListener('error', function(e) {
+            var errDiv = document.createElement('div');
+            errDiv.style.position = 'fixed';
+            errDiv.style.top = '0';
+            errDiv.style.left = '0';
+            errDiv.style.width = '100%';
+            errDiv.style.background = 'red';
+            errDiv.style.color = 'white';
+            errDiv.style.padding = '15px';
+            errDiv.style.zIndex = '99999';
+            errDiv.style.fontFamily = 'monospace';
+            errDiv.style.fontSize = '14px';
+            errDiv.style.lineHeight = '1.4';
+            errDiv.style.textAlign = 'left';
+            errDiv.innerHTML = '<strong>JavaScript Error:</strong> ' + e.message + ' at ' + e.filename + ':' + e.lineno;
+            document.body.appendChild(errDiv);
+        });
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مخطط ومصمم المطابخ ثلاثي الأبعاد (3D) | المهندس للألوميتال</title>
+    <meta name="description" content="صمم مطبخك بنفسك تفاعلياً خطوة بخطوة بالرسم والألوان والخامات وشاهد النتيجة في مجسم 3D واقعي يدور 360 درجة مع حساب فوري للتكلفة لعام 2026.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Three.js and OrbitControls for 3D Interactive Kitchen Visualizer -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <style>
+        /* إضافات وتنسيقات خاصة بصفحة المخطط المخصصة لجعلها كبرنامج متكامل */
+        .planner-page-container {
+            padding-top: 120px;
+            padding-bottom: 60px;
+            background: radial-gradient(circle at 10% 20%, rgba(2, 132, 199, 0.08) 0%, transparent 40%),
+                        radial-gradient(circle at 90% 80%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
+                        linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            min-height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* فقاعات أورورا متحركة فخمة جداً في الخلفية لإبهار العميل */
+        .planner-page-container::before,
+        .planner-page-container::after {
+            content: '';
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(2, 132, 199, 0.15) 0%, transparent 70%);
+            filter: blur(80px);
+            z-index: 0;
+            pointer-events: none;
+            animation: float-aurora 25s infinite alternate ease-in-out;
+        }
+
+        .planner-page-container::before {
+            top: -100px;
+            right: -100px;
+        }
+
+        .planner-page-container::after {
+            bottom: -150px;
+            left: -100px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, transparent 70%);
+            animation-delay: -10s;
+        }
+
+        @keyframes float-aurora {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(60px, -60px) scale(1.1); }
+            100% { transform: translate(-40px, 40px) scale(0.95); }
+        }
+
+        .planner-workspace {
+            display: grid;
+            grid-template-columns: 320px 290px 1fr;
+            gap: 20px;
+            margin-top: 30px;
+            position: relative;
+            z-index: 1; /* فوق فقاعات الخلفية */
+        }
+
+        .planner-left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        /* كروت بتأثير الزجاج البلوري الفاخر (Glassmorphism) */
+        .planner-canvas-card,
+        .planner-card {
+            background: var(--bg-tertiary);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            transition: all var(--transition-normal);
+            position: relative;
+            z-index: 1;
+        }
+
+        .planner-canvas-card:hover,
+        .planner-card:hover {
+            border-color: rgba(2, 132, 199, 0.3);
+            box-shadow: 0 15px 50px rgba(2, 132, 199, 0.1);
+        }
+
+        .planner-canvas-card {
+            position: sticky;
+            top: 100px;
+        }
+
+        .canvas-3d-wrapper {
+            position: relative;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            background: #090d16;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.8);
+            border: 1px solid var(--border-color);
+        }
+
+        #canvas-3d-container {
+            width: 100%;
+            height: 520px; /* زيادة الطول للوضوح */
+        }
+
+        /* تنسيقات متطورة للشبكة التفاعلية (Interactive Grid) مع توهج نيون عند التحويم */
+        .grid-cell {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            aspect-ratio: 1;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .grid-cell:hover {
+            transform: scale(1.12);
+            z-index: 10;
+            box-shadow: 0 0 12px rgba(255, 255, 255, 0.2);
+            border-color: var(--text-muted);
+        }
+
+        /* توهج ألوان الفرش النيون المبهر للعميل */
+        .grid-cell.cabinet {
+            background-color: var(--color-primary) !important;
+            box-shadow: 0 0 15px rgba(2, 132, 199, 0.6);
+            border-color: #38bdf8;
+        }
+        .grid-cell.sink {
+            background-color: #3b82f6 !important;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.6);
+            border-color: #60a5fa;
+        }
+        .grid-cell.cooker {
+            background-color: #f97316 !important;
+            box-shadow: 0 0 15px rgba(249, 115, 22, 0.6);
+            border-color: #fb923c;
+        }
+        .grid-cell.fridge {
+            background-color: #64748b !important;
+            box-shadow: 0 0 15px rgba(100, 116, 139, 0.6);
+            border-color: #94a3b8;
+        }
+
+        @media (max-width: 1024px) {
+            .planner-workspace {
+                grid-template-columns: 1fr;
+            }
+            .planner-canvas-card {
+                position: relative;
+                top: 0;
+            }
+            #canvas-3d-container {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header class="main-header scrolled">
+        <div class="container header-container">
+            <a href="index.html" class="logo">
+                <span class="logo-icon"><i class="fa-solid fa-compass-drafting"></i></span>
+                <div class="logo-text">
+                    <span class="brand-name">المهندس</span>
+                    <span class="brand-sub">للألوميتال والزجاج</span>
+                </div>
+            </a>
+            
+            <nav class="navbar" id="navbar">
+                <a href="index.html" class="nav-link">الرئيسية</a>
+                <a href="index.html#services" class="nav-link">خدماتنا</a>
+                <a href="index.html#portfolio" class="nav-link">معرض الأعمال</a>
+                <a href="index.html#calculator" class="nav-link">حاسبة الأسعار</a>
+                <a href="#" class="nav-link active">مخطط المطابخ 3D</a>
+                <a href="index.html#contact" class="btn btn-primary nav-cta">طلب معاينة</a>
+            </nav>
+            
+            <div class="header-actions">
+                <button id="theme-toggle" class="theme-toggle-btn" aria-label="تبديل المظهر">
+                    <i class="fa-solid fa-moon"></i>
+                </button>
+                <button id="menu-toggle" class="menu-toggle-btn" aria-label="فتح القائمة">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="mobile-menu-overlay" id="mobile-menu-overlay"></div>
+
+    <!-- Main Planner Workspace -->
+    <main class="planner-page-container">
+        <div class="container">
+            <div class="section-header" style="text-align: center; margin-bottom: 20px;">
+                <span class="sub-title" style="justify-content: center;"><i class="fa-solid fa-wand-magic-sparkles"></i> تطبيق ويب احترافي 2026</span>
+                <h1 style="font-size: 2.2rem; font-weight: 800; color: var(--text-primary); margin-top: 10px;">برنامج تخطيط وتصميم المطابخ ثلاثي الأبعاد (إصدار متلاحم بالكامل v2.5)</h1>
+                <p style="color: var(--text-secondary); max-width: 600px; margin: 10px auto 0; line-height: 1.6;">
+                    ارسم مخطط مطبخك بنفسك على لوحة الرسم التفاعلية، اختر ألوانك وخاماتك وشاهد مجسم الـ 3D يرتفع ويتحدث في نفس اللحظة بظلال واقعية، مع حساب دقيق وفوري للتكلفة!
+                </p>
+            </div>
+
+            <div class="planner-workspace">
+                
+                <!-- 1. Right Column: Design Settings (Width 320px) -->
+                <div class="planner-card" style="box-shadow: var(--shadow-md); background-color: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px; display: flex; flex-direction: column; gap: 15px;">
+                    <h3 style="font-size: 1.15rem; font-weight: 800; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; color: var(--text-primary); margin: 0;">
+                        <i class="fa-solid fa-sliders" style="color: var(--color-primary); margin-left: 8px;"></i> الإعدادات والخامات:
+                    </h3>
+
+                    <!-- 1. Shape selection -->
+                    <div class="form-group" style="margin: 0;">
+                        <label for="plan-shape" style="font-size: 0.85rem; margin-bottom: 6px;"><i class="fa-solid fa-shapes form-icon"></i> شكل المطبخ:</label>
+                        <select id="plan-shape" class="form-control" style="font-size: 0.85rem; padding: 8px;">
+                            <option value="straight">جدار مستقيم (Linear)</option>
+                            <option value="l-shape" selected>على شكل حرف L (L-Shape)</option>
+                            <option value="u-shape">على شكل حرف U (U-Shape)</option>
+                            <option value="island">مطبخ مودرن مع جزيرة (Island)</option>
+                        </select>
+                    </div>
+
+                    <!-- 2. Wall dimensions -->
+                    <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0;">
+                        <div class="form-group" style="margin: 0;">
+                            <label for="plan-wall1" style="font-size: 0.85rem; margin-bottom: 6px;"><i class="fa-solid fa-ruler-horizontal form-icon"></i> الرئيسي (م):</label>
+                            <input type="number" id="plan-wall1" class="form-control" value="3.5" min="1" step="0.1" style="font-size: 0.85rem; padding: 8px;">
+                        </div>
+                        <div class="form-group" id="wall2-group" style="margin: 0;">
+                            <label for="plan-wall2" id="plan-wall2-label" style="font-size: 0.85rem; margin-bottom: 6px;"><i class="fa-solid fa-ruler-horizontal form-icon"></i> الجانبي (م):</label>
+                            <input type="number" id="plan-wall2" class="form-control" value="2.5" min="1" step="0.1" style="font-size: 0.85rem; padding: 8px;">
+                        </div>
+                    </div>
+
+                    <!-- 3. Cabinet Style / Colors -->
+                    <div class="form-group" style="margin: 0;">
+                        <label for="plan-style" style="font-size: 0.85rem; margin-bottom: 6px;"><i class="fa-solid fa-palette form-icon"></i> الألوان والستايل:</label>
+                        <select id="plan-style" class="form-control" style="font-size: 0.85rem; padding: 8px;">
+                            <option value="matte-black" selected>أسود مطفي فاخر (Matte Black)</option>
+                            <option value="wood-wood">خشمونيوم دافئ (Wood Effect)</option>
+                            <option value="glossy-white">أبيض ثلجي لامع (Glossy White)</option>
+                            <option value="metallic-gray">رمادي تيتانيوم ميتاليك (Metallic Gray)</option>
+                            <option value="custom">لون مخصص من اختيارك (Custom Color) 🎨</option>
+                        </select>
+                    </div>
+
+                    <!-- لون مخصص مخفي افتراضياً ويظهر عند اختيار لون مخصص -->
+                    <div class="form-group" id="custom-color-group" style="display: none; margin: 0; border-top: 1px dashed var(--border-color); padding-top: 10px;">
+                        <label for="plan-color-picker" style="font-size: 0.85rem; margin-bottom: 6px;"><i class="fa-solid fa-eye-dropper form-icon"></i> اختر لون المطبخ المفضل لديك:</label>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="color" id="plan-color-picker" value="#0284c7" style="width: 55px; height: 35px; padding: 2px; cursor: pointer; border-radius: 6px; border: 1px solid var(--border-color); background: none;">
+                            <span id="custom-color-hex" style="font-size: 0.85rem; color: var(--text-secondary); font-family: monospace; font-weight: 600;">#0284c7</span>
+                        </div>
+                    </div>
+
+                    <!-- 4. Handle Type -->
+                    <div class="form-group" style="margin: 0;">
+                        <label for="plan-handles" style="font-size: 0.85rem; margin-bottom: 6px;"><i class="fa-solid fa-hand-pointer form-icon"></i> المقابض:</label>
+                        <select id="plan-handles" class="form-control" style="font-size: 0.85rem; padding: 8px;">
+                            <option value="gola" selected>مقابض جولا مخفية (Gola)</option>
+                            <option value="external">مقابض بارزة مودرن</option>
+                        </select>
+                    </div>
+
+                    <!-- 5. Countertop Type -->
+                    <div class="form-group" style="margin: 0;">
+                        <label for="plan-countertop" style="font-size: 0.85rem; margin-bottom: 6px;"><i class="fa-solid fa-gem form-icon"></i> الرخام / السطح:</label>
+                        <select id="plan-countertop" class="form-control" style="font-size: 0.85rem; padding: 8px;">
+                            <option value="quartz-white" selected>كوارتز أبيض ناصع</option>
+                            <option value="galaxy-black">جرانيت أسود جالاكسي</option>
+                            <option value="carrara-gray">رخام كرارا رمادي</option>
+                            <option value="none">بدون رخام (خزائن فقط)</option>
+                        </select>
+                    </div>
+
+                    <!-- 6. Accessories selection -->
+                    <div class="form-group" style="margin: 0;">
+                        <label style="font-size: 0.85rem;"><i class="fa-solid fa-list-check form-icon"></i> الميزات المدمجة:</label>
+                        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;">
+                            <label class="checkbox-container" style="font-size: 0.8rem; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" class="plan-acc" value="hydraulic-rack" checked>
+                                مطبق هيدروليك سحري
+                            </label>
+                            <label class="checkbox-container" style="font-size: 0.8rem; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" class="plan-acc" value="lazy-susan">
+                                صينية دوارة للزوايا
+                            </label>
+                            <label class="checkbox-container" style="font-size: 0.8rem; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" class="plan-acc" value="pantry-tall" checked>
+                                دولاب طولي لتخزين الأطعمة
+                            </label>
+                            <label class="checkbox-container" style="font-size: 0.8rem; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" class="plan-acc" value="led-under" checked>
+                                إضاءة ليد دافئة مدمجة
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Upload Sketch Area -->
+                    <div class="form-group" style="border-top: 1px solid var(--border-color); padding-top: 10px; margin: 0;">
+                        <label style="font-size: 0.85rem;"><i class="fa-solid fa-file-image form-icon"></i> رفع كروكي مقاسات:</label>
+                        <div class="upload-dropzone" id="upload-dropzone" style="margin-top: 6px; padding: 10px;">
+                            <input type="file" id="sketch-upload" accept="image/*" style="display: none;">
+                            <i class="fa-solid fa-cloud-arrow-up upload-icon" style="font-size: 1.2rem; margin-bottom: 4px;"></i>
+                            <p class="upload-text" style="font-size: 0.75rem; margin: 0;">اضغط أو اسحب رسمك الكروكي</p>
+                            <div class="upload-preview-wrapper" id="upload-preview-wrapper" style="display: none; margin-top: 6px;">
+                                <img id="uploaded-sketch-img" src="" alt="رسمك الكروكي" style="max-height: 40px; object-fit: contain;">
+                                <span class="remove-upload" id="remove-upload" style="font-size: 0.7rem; margin-top: 2px;">&times; إزالة</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="button" id="generate-design-btn" class="btn btn-primary btn-block" style="padding: 10px; font-size: 0.9rem; font-weight: 700;">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> توليد وتحديث الـ 3D
+                    </button>
+                </div>
+
+                <!-- 2. Middle Column: Drawing Grid Card (Width 290px) -->
+                <div class="planner-card planner-sketchpad-card" style="box-shadow: var(--shadow-md); background-color: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px; display: flex; flex-direction: column; gap: 10px;">
+                    <h3 style="font-size: 1.15rem; font-weight: 800; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; color: var(--text-primary); margin: 0;">
+                        <i class="fa-solid fa-pen-ruler" style="color: var(--color-primary); margin-left: 8px;"></i> لوحة الرسم 2D:
+                    </h3>
+                    <p class="sketchpad-hint" style="font-size: 0.75rem; color: var(--text-secondary); line-height: 1.4; margin: 0;"><i class="fa-solid fa-circle-info"></i> اختر نوع الفرشاة بالأسفل، ثم انقر على مربعات الشبكة لرسم وحدات المطبخ فورياً:</p>
+                    
+                    <!-- Brush Palette -->
+                    <div class="sketchpad-palette" style="display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; margin-top: 5px;">
+                        <button type="button" class="palette-btn active" data-brush="cabinet" style="display: inline-flex; align-items: center; gap: 4px; padding: 6px 8px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: all var(--transition-fast);">
+                            <span class="color-box box-cabinet" style="width: 8px; height: 8px; border-radius: 2px; display: inline-block; background-color: var(--color-primary);"></span>
+                            خزانة
+                        </button>
+                        <button type="button" class="palette-btn" data-brush="sink" style="display: inline-flex; align-items: center; gap: 4px; padding: 6px 8px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: all var(--transition-fast);">
+                            <span class="color-box box-sink" style="width: 8px; height: 8px; border-radius: 2px; display: inline-block; background-color: #3b82f6;"></span>
+                            حوض
+                        </button>
+                        <button type="button" class="palette-btn" data-brush="cooker" style="display: inline-flex; align-items: center; gap: 4px; padding: 6px 8px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: all var(--transition-fast);">
+                            <span class="color-box box-cooker" style="width: 8px; height: 8px; border-radius: 2px; display: inline-block; background-color: #f97316;"></span>
+                            موقد
+                        </button>
+                        <button type="button" class="palette-btn" data-brush="fridge" style="display: inline-flex; align-items: center; gap: 4px; padding: 6px 8px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: all var(--transition-fast);">
+                            <span class="color-box box-fridge" style="width: 8px; height: 8px; border-radius: 2px; display: inline-block; background-color: #64748b;"></span>
+                            ثلاجة
+                        </button>
+                        <button type="button" class="palette-btn" data-brush="empty" style="display: inline-flex; align-items: center; gap: 4px; padding: 6px 8px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: all var(--transition-fast);">
+                            <span class="color-box box-empty" style="width: 8px; height: 8px; border-radius: 2px; display: inline-block; background-color: transparent; border: 1px dashed var(--text-muted);"></span>
+                            مسح
+                        </button>
+                    </div>
+                    
+                    <!-- Grid board container -->
+                    <div class="grid-board" id="grid-board" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; width: 100%; max-width: 230px; margin: 10px auto; background-color: var(--bg-secondary); border: 2px solid var(--border-color); border-radius: 8px; padding: 6px; aspect-ratio: 1;">
+                        <!-- JS inserts 36 grid-cells here -->
+                    </div>
+                    
+                    <button type="button" id="clear-grid-btn" class="btn btn-secondary btn-sm" style="width: 100%; font-size: 0.8rem; padding: 8px; font-weight: 600;">
+                        <i class="fa-solid fa-eraser"></i> مسح لوحة الرسم
+                    </button>
+                </div>
+
+                <!-- 3. Left Panel: 3D Render Canvas & Cost Estimation (Width 1fr) -->
+                <div class="planner-left-panel">
+                    
+                    <!-- 3D Canvas Visualizer -->
+                    <div class="planner-canvas-card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <h4 style="font-size: 1.1rem; font-weight: 800; color: var(--text-primary); margin: 0;">
+                                <i class="fa-solid fa-cube" style="color: var(--color-primary); margin-left: 6px;"></i> مساحة العرض التفاعلية للمجسم (3D Workspace)
+                            </h4>
+                            <span style="font-size: 0.8rem; background: var(--bg-secondary); padding: 4px 8px; border-radius: 4px; color: var(--text-secondary); border: 1px solid var(--border-color);">
+                                <i class="fa-solid fa-rotate"></i> اسحب للتدوير بالكامل
+                            </span>
+                        </div>
+                        
+                        <div class="canvas-3d-wrapper">
+                            <div id="canvas-3d-container"></div>
+                            
+                            <!-- AI Loader simulation overlay -->
+                            <div class="visualizer-loader" id="visualizer-loader" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(11, 15, 25, 0.93); display: none; flex-direction: column; align-items: center; justify-content: center; gap: 15px; color: #ffffff; z-index: 10;">
+                                <div class="loading-spinner" style="border: 4px solid rgba(2, 132, 199, 0.1); border-left-color: var(--color-primary); border-radius: 50%; width: 45px; height: 45px; animation: spin 1s linear infinite;"></div>
+                                <span style="font-size: 0.95rem; font-weight: 600; font-family: 'Cairo', sans-serif;">جاري رندرة المجسم ثلاثي الأبعاد للمطبخ...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Design Results Card -->
+                    <div class="planner-results-box" id="planner-results" style="background-color: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 25px; box-shadow: var(--shadow-md);">
+                        
+                        <!-- Empty state before generation -->
+                        <div class="planner-empty-state" id="planner-empty-state" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; text-align: center; color: var(--text-muted);">
+                            <i class="fa-solid fa-compass-drafting planner-empty-icon" style="font-size: 3.5rem; color: var(--border-color); margin-bottom: 15px;"></i>
+                            <h4 style="font-size: 1.15rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">بانتظار تصميمك التفاعلي</h4>
+                            <p style="font-size: 0.9rem; max-width: 320px; line-height: 1.5;">قم برسم وحدات مطبخك على الشبكة أو حدد الأبعاد واضغط على زر "توليد وتحديث التصميم" لعرض النتائج والتكلفة والتقرير الفني هنا.</p>
+                        </div>
+
+                        <!-- Results output content -->
+                        <div class="planner-results-content" id="planner-results-content" style="display: none;">
+                            <h3 style="font-size: 1.25rem; font-weight: 800; border-bottom: 2px solid var(--border-color); padding-bottom: 12px; margin-bottom: 20px; color: var(--text-primary);">
+                                <i class="fa-solid fa-file-invoice-dollar" style="color: var(--color-primary); margin-left: 8px;"></i> التقرير الفني وحساب التكلفة:
+                            </h3>
+
+                            <!-- Price Card -->
+                            <div class="planner-price-card" style="background: linear-gradient(135deg, rgba(2, 132, 199, 0.1) 0%, rgba(2, 132, 199, 0.02) 100%); border: 1px solid rgba(2, 132, 199, 0.2); border-radius: var(--radius-sm); padding: 20px; text-align: center; margin-bottom: 20px;">
+                                <span style="font-size: 0.9rem; color: var(--text-secondary); display: block; margin-bottom: 5px;">التكلفة الإجمالية التقديرية (ألوميتال + رخام + إكسسوارات):</span>
+                                <div style="font-size: 2.2rem; font-weight: 900; color: var(--color-primary); font-family: 'Tajawal', sans-serif;">
+                                    <span id="plan-estimated-price">0</span> <span style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary);">جنيه مصري</span>
+                                </div>
+                                <span style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 5px;">* السعر تقديري ويشمل التصنيع والتركيب الفني وضمان 10 سنوات لعام 2026.</span>
+                            </div>
+
+                            <!-- Suggestion Cards -->
+                            <div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 25px;">
+                                <div class="suggestion-card" style="background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 15px;">
+                                    <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;"><i class="fa-solid fa-shuffle" style="color: var(--color-primary); margin-left: 6px;"></i> نصائح مثلث الحركة الكفاءة (Work Triangle):</h4>
+                                    <p id="triangle-advice" style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6; margin: 0;"></p>
+                                </div>
+
+                                <div class="suggestion-card" style="background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 15px;">
+                                    <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;"><i class="fa-solid fa-vial" style="color: var(--color-primary); margin-left: 6px;"></i> تناسق الخامات والألوان المقترح:</h4>
+                                    <p id="color-advice" style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6; margin: 0;"></p>
+                                </div>
+
+                                <div class="suggestion-card" style="background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 15px;">
+                                    <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;"><i class="fa-solid fa-boxes-stacked" style="color: var(--color-primary); margin-left: 6px;"></i> الملحقات والوحدات المشمولة في السعر:</h4>
+                                    <ul id="selected-acc-list" style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6; padding-right: 20px; margin: 0;">
+                                        <!-- Dynamic items -->
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- WhatsApp Action -->
+                            <a href="#" target="_blank" class="btn btn-whatsapp btn-block btn-lg" id="send-specs-whatsapp-btn" style="display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 700; font-size: 1.05rem; padding: 14px;">
+                                <i class="fa-brands fa-whatsapp" style="font-size: 1.4rem;"></i> تأكيد التصميم وحجز المعاينة الفنية مجاناً
+                            </a>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="main-footer" style="background-color: var(--bg-secondary); border-top: 1px solid var(--border-color); padding: 30px 0; text-align: center;">
+        <div class="container">
+            <p style="font-size: 0.9rem; color: var(--text-secondary); margin: 0;">&copy; 2026 ورشة المهندس للألوميتال والزجاج. جميع الحقوق محفوظة.</p>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 5px;">تم التطوير بأعلى تقنيات الويب ثلاثية الأبعاد التفاعلية.</p>
+        </div>
+    </footer>
+
+    <!-- Planner Page JS Logic -->
+    <script src="planner.js"></script>
+
+</body>
+</html>
