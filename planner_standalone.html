@@ -2334,13 +2334,18 @@ ul {
                     
                     <!-- 3D Canvas Visualizer -->
                     <div class="planner-canvas-card">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
                             <h4 style="font-size: 1.1rem; font-weight: 800; color: var(--text-primary); margin: 0;">
                                 <i class="fa-solid fa-cube" style="color: var(--color-primary); margin-left: 6px;"></i> مساحة العرض التفاعلية للمجسم (3D Workspace)
                             </h4>
-                            <span style="font-size: 0.8rem; background: var(--bg-secondary); padding: 4px 8px; border-radius: 4px; color: var(--text-secondary); border: 1px solid var(--border-color);">
-                                <i class="fa-solid fa-rotate"></i> اسحب للتدوير بالكامل
-                            </span>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <button id="perf-toggle-btn" type="button" style="font-size: 0.75rem; background: var(--bg-secondary); border: 1px solid var(--color-primary); color: var(--color-primary); padding: 5px 12px; border-radius: 20px; font-weight: 700; cursor: pointer; transition: all var(--transition-fast);">
+                                    <i class="fa-solid fa-bolt"></i> <span id="perf-toggle-text">وضع الأداء الفائق ⚡</span>
+                                </button>
+                                <span style="font-size: 0.8rem; background: var(--bg-secondary); padding: 4px 8px; border-radius: 4px; color: var(--text-secondary); border: 1px solid var(--border-color);">
+                                    <i class="fa-solid fa-rotate"></i> اسحب للتدوير بالكامل
+                                </span>
+                            </div>
                         </div>
                         
                         <div class="canvas-3d-wrapper">
@@ -2786,13 +2791,11 @@ document.addEventListener('DOMContentLoaded', () => {
         camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
         camera.position.set(4.5, 4.5, 6.5);
 
-        const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (window.innerWidth <= 768) || ('ontouchstart' in window);
-
-        renderer = new THREE.WebGLRenderer({ antialias: !isMobileDevice, powerPreference: isMobileDevice ? 'default' : 'high-performance' });
+        renderer = new THREE.WebGLRenderer({ antialias: !isFastPerfMode, powerPreference: isFastPerfMode ? 'default' : 'high-performance' });
         renderer.setSize(width, height);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobileDevice ? 1.0 : 1.5));
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = isMobileDevice ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, isFastPerfMode ? (isMobileDevice ? 0.85 : 1.0) : 1.5));
+        renderer.shadowMap.enabled = !isFastPerfMode;
+        renderer.shadowMap.type = THREE.PCFShadowMap;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         renderer.toneMappingExposure = 1.15;
         renderer.outputEncoding = THREE.sRGBEncoding; 
@@ -2800,23 +2803,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
         controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
-        controls.dampingFactor = isMobileDevice ? 0.08 : 0.05;
-        controls.rotateSpeed = isMobileDevice ? 0.75 : 1.0;
+        controls.dampingFactor = isMobileDevice ? 0.1 : 0.05;
+        controls.rotateSpeed = isMobileDevice ? 0.7 : 1.0;
         controls.maxPolarAngle = Math.PI / 2 - 0.02; 
         controls.minDistance = 2.5;
         controls.maxDistance = 12;
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, isMobileDevice ? 0.65 : 0.45);
+        const ambientLight = new THREE.AmbientLight(0xffffff, isFastPerfMode ? 0.75 : 0.45);
         scene.add(ambientLight);
 
         const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.4);
         scene.add(hemiLight);
 
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.95);
+        dirLight = new THREE.DirectionalLight(0xffffff, 0.95);
         dirLight.position.set(5, 8, 4);
-        dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = isMobileDevice ? 1024 : 2048;
-        dirLight.shadow.mapSize.height = isMobileDevice ? 1024 : 2048;
+        dirLight.castShadow = !isFastPerfMode;
+        dirLight.shadow.mapSize.width = 1024;
+        dirLight.shadow.mapSize.height = 1024;
         dirLight.shadow.camera.near = 0.5;
         dirLight.shadow.camera.far = 18;
         dirLight.shadow.camera.left = -6;
@@ -2824,7 +2827,7 @@ document.addEventListener('DOMContentLoaded', () => {
         dirLight.shadow.camera.top = 6;
         dirLight.shadow.camera.bottom = -6;
         dirLight.shadow.bias = -0.0003;
-        dirLight.shadow.radius = isMobileDevice ? 2 : 4;
+        dirLight.shadow.radius = 2;
         scene.add(dirLight);
 
         const pointLight = new THREE.PointLight(0xffffff, 0.35, 10);
@@ -2832,33 +2835,81 @@ document.addEventListener('DOMContentLoaded', () => {
         scene.add(pointLight);
 
         const floorGeo = new THREE.PlaneGeometry(16, 16);
-        const floorMat = new THREE.MeshPhysicalMaterial({ 
+        const floorMat = new THREE.MeshStandardMaterial({ 
             color: 0x090d16, 
-            roughness: 0.15,
-            metalness: 0.6,
-            clearcoat: isMobileDevice ? 0.2 : 1.0,
-            clearcoatRoughness: 0.1
+            roughness: 0.2,
+            metalness: 0.5
         });
         const floor = new THREE.Mesh(floorGeo, floorMat);
         floor.rotation.x = -Math.PI / 2;
         floor.position.y = -0.5;
-        floor.receiveShadow = true; 
+        floor.receiveShadow = !isFastPerfMode; 
         scene.add(floor);
 
         const gridHelper = new THREE.GridHelper(16, 16, 0x4b5563, 0x111827);
         gridHelper.position.y = -0.49;
         scene.add(gridHelper);
 
-
         kitchenGroup = new THREE.Group();
         scene.add(kitchenGroup);
 
-        function animate() {
-            requestAnimationFrame(animate);
+        let renderRequested = false;
+        function renderScene() {
+            renderRequested = false;
             controls.update();
             renderer.render(scene, camera);
         }
-        animate();
+        function requestRender() {
+            if (!renderRequested) {
+                renderRequested = true;
+                requestAnimationFrame(renderScene);
+            }
+        }
+
+        controls.addEventListener('change', requestRender);
+        window.requestSceneRender = requestRender;
+
+        // تشغيل الرندرة الأولية
+        requestRender();
+
+        // زر التبديل بين وضع الأداء الفائق ووضع الدقة
+        const perfToggleBtn = document.getElementById('perf-toggle-btn');
+        const perfToggleText = document.getElementById('perf-toggle-text');
+
+        function updatePerfUI() {
+            if (!perfToggleBtn || !perfToggleText) return;
+            if (isFastPerfMode) {
+                perfToggleText.textContent = "وضع الأداء الفائق ⚡";
+                perfToggleBtn.style.borderColor = "var(--color-primary)";
+                perfToggleBtn.style.color = "var(--color-primary)";
+            } else {
+                perfToggleText.textContent = "وضع الدقة والظلال 🎨";
+                perfToggleBtn.style.borderColor = "var(--border-color)";
+                perfToggleBtn.style.color = "var(--text-secondary)";
+            }
+        }
+        updatePerfUI();
+
+        if (perfToggleBtn) {
+            perfToggleBtn.addEventListener('click', () => {
+                isFastPerfMode = !isFastPerfMode;
+                updatePerfUI();
+                renderer.shadowMap.enabled = !isFastPerfMode;
+                dirLight.castShadow = !isFastPerfMode;
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, isFastPerfMode ? (isMobileDevice ? 0.85 : 1.0) : 1.5));
+                
+                if (isUsingCustomGrid) {
+                    update3DFromSketchpad();
+                } else {
+                    const shape = planShape.value;
+                    const style = planStyle.value;
+                    const countertop = planCountertop.value;
+                    const hasLed = document.querySelector('.plan-acc[value="led-under"]').checked;
+                    update3DKitchen(shape, style, countertop, hasLed);
+                }
+                requestRender();
+            });
+        }
 
         window.addEventListener('resize', () => {
             const w = container.clientWidth;
@@ -3055,6 +3106,14 @@ document.addEventListener('DOMContentLoaded', () => {
         texture.wrapT = THREE.RepeatWrapping;
         texture.repeat.set(1.5, 1.5);
         
+        if (isFastPerfMode) {
+            return new THREE.MeshStandardMaterial({
+                map: texture,
+                roughness: 0.15,
+                metalness: 0.05
+            });
+        }
+        
         return new THREE.MeshPhysicalMaterial({
             map: texture,
             roughness: 0.08,
@@ -3115,24 +3174,15 @@ document.addEventListener('DOMContentLoaded', () => {
         let handleColor = 0xd4af37;
         
         if (style === 'wood-wood') {
-            // خشمونيوم فاخر بلمعة ورنيش خفيفة واقعية
-            cabMaterial = trackMat(new THREE.MeshPhysicalMaterial({ 
-                color: 0x8b5a2b, 
-                roughness: 0.35, 
-                metalness: 0.1,
-                clearcoat: 0.5,
-                clearcoatRoughness: 0.15
-            }));
+            cabMaterial = isFastPerfMode
+                ? trackMat(new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness: 0.35, metalness: 0.1 }))
+                : trackMat(new THREE.MeshPhysicalMaterial({ color: 0x8b5a2b, roughness: 0.35, metalness: 0.1, clearcoat: 0.5, clearcoatRoughness: 0.15 }));
             doorMaterial = cabMaterial;
             handleColor = 0x111111; 
         } else if (style === 'glossy-white') {
-            cabMaterial = trackMat(new THREE.MeshPhysicalMaterial({ 
-                color: 0xfbfbfb, 
-                roughness: 0.05, 
-                metalness: 0.1,
-                clearcoat: 1.0,
-                clearcoatRoughness: 0.05
-            }));
+            cabMaterial = isFastPerfMode
+                ? trackMat(new THREE.MeshStandardMaterial({ color: 0xfbfbfb, roughness: 0.1, metalness: 0.1 }))
+                : trackMat(new THREE.MeshPhysicalMaterial({ color: 0xfbfbfb, roughness: 0.05, metalness: 0.1, clearcoat: 1.0, clearcoatRoughness: 0.05 }));
             doorMaterial = cabMaterial;
             handleColor = 0x9ca3af; 
         } else if (style === 'metallic-gray') {
@@ -3146,22 +3196,15 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (style === 'custom') {
             const customHex = planColorPicker.value;
             const customColorNum = parseInt(customHex.replace('#', '0x'));
-            cabMaterial = trackMat(new THREE.MeshPhysicalMaterial({ 
-                color: customColorNum, 
-                roughness: 0.25, 
-                metalness: 0.4,
-                clearcoat: 0.85,
-                clearcoatRoughness: 0.05
-            }));
+            cabMaterial = isFastPerfMode
+                ? trackMat(new THREE.MeshStandardMaterial({ color: customColorNum, roughness: 0.25, metalness: 0.4 }))
+                : trackMat(new THREE.MeshPhysicalMaterial({ color: customColorNum, roughness: 0.25, metalness: 0.4, clearcoat: 0.85, clearcoatRoughness: 0.05 }));
             doorMaterial = cabMaterial;
             handleColor = 0xd4af37; 
         } else { 
-            cabMaterial = trackMat(new THREE.MeshPhysicalMaterial({ 
-                color: 0x18181c, 
-                roughness: 0.5, 
-                metalness: 0.7,
-                clearcoat: 0.15
-            }));
+            cabMaterial = isFastPerfMode
+                ? trackMat(new THREE.MeshStandardMaterial({ color: 0x18181c, roughness: 0.5, metalness: 0.7 }))
+                : trackMat(new THREE.MeshPhysicalMaterial({ color: 0x18181c, roughness: 0.5, metalness: 0.7, clearcoat: 0.15 }));
             doorMaterial = cabMaterial;
             handleColor = 0xd4af37; 
         }
@@ -3566,23 +3609,15 @@ document.addEventListener('DOMContentLoaded', () => {
         let handleColor = 0xd4af37;
 
         if (style === 'wood-wood') {
-            cabMaterial = trackMat(new THREE.MeshPhysicalMaterial({ 
-                color: 0x8b5a2b, 
-                roughness: 0.35, 
-                metalness: 0.1,
-                clearcoat: 0.5,
-                clearcoatRoughness: 0.15
-            }));
+            cabMaterial = isFastPerfMode
+                ? trackMat(new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness: 0.35, metalness: 0.1 }))
+                : trackMat(new THREE.MeshPhysicalMaterial({ color: 0x8b5a2b, roughness: 0.35, metalness: 0.1, clearcoat: 0.5, clearcoatRoughness: 0.15 }));
             doorMaterial = cabMaterial;
             handleColor = 0x111111;
         } else if (style === 'glossy-white') {
-            cabMaterial = trackMat(new THREE.MeshPhysicalMaterial({ 
-                color: 0xfbfbfb, 
-                roughness: 0.05, 
-                metalness: 0.1,
-                clearcoat: 1.0,
-                clearcoatRoughness: 0.05
-            }));
+            cabMaterial = isFastPerfMode
+                ? trackMat(new THREE.MeshStandardMaterial({ color: 0xfbfbfb, roughness: 0.1, metalness: 0.1 }))
+                : trackMat(new THREE.MeshPhysicalMaterial({ color: 0xfbfbfb, roughness: 0.05, metalness: 0.1, clearcoat: 1.0, clearcoatRoughness: 0.05 }));
             doorMaterial = cabMaterial;
             handleColor = 0x9ca3af;
         } else if (style === 'metallic-gray') {
@@ -3592,22 +3627,15 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (style === 'custom') {
             const customHex = planColorPicker.value;
             const customColorNum = parseInt(customHex.replace('#', '0x'));
-            cabMaterial = trackMat(new THREE.MeshPhysicalMaterial({ 
-                color: customColorNum, 
-                roughness: 0.25, 
-                metalness: 0.4,
-                clearcoat: 0.85,
-                clearcoatRoughness: 0.05
-            }));
+            cabMaterial = isFastPerfMode
+                ? trackMat(new THREE.MeshStandardMaterial({ color: customColorNum, roughness: 0.25, metalness: 0.4 }))
+                : trackMat(new THREE.MeshPhysicalMaterial({ color: customColorNum, roughness: 0.25, metalness: 0.4, clearcoat: 0.85, clearcoatRoughness: 0.05 }));
             doorMaterial = cabMaterial;
             handleColor = 0xd4af37;
         } else {
-            cabMaterial = trackMat(new THREE.MeshPhysicalMaterial({ 
-                color: 0x18181c, 
-                roughness: 0.5, 
-                metalness: 0.7,
-                clearcoat: 0.15
-            }));
+            cabMaterial = isFastPerfMode
+                ? trackMat(new THREE.MeshStandardMaterial({ color: 0x18181c, roughness: 0.5, metalness: 0.7 }))
+                : trackMat(new THREE.MeshPhysicalMaterial({ color: 0x18181c, roughness: 0.5, metalness: 0.7, clearcoat: 0.15 }));
             doorMaterial = cabMaterial;
             handleColor = 0xd4af37;
         }
