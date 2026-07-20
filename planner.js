@@ -362,11 +362,13 @@ document.addEventListener('DOMContentLoaded', () => {
         camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
         camera.position.set(4.5, 4.5, 6.5);
 
-        renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+        const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (window.innerWidth <= 768) || ('ontouchstart' in window);
+
+        renderer = new THREE.WebGLRenderer({ antialias: !isMobileDevice, powerPreference: isMobileDevice ? 'default' : 'high-performance' });
         renderer.setSize(width, height);
-        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobileDevice ? 1.0 : 1.5));
         renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.shadowMap.type = isMobileDevice ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         renderer.toneMappingExposure = 1.15;
         renderer.outputEncoding = THREE.sRGBEncoding; 
@@ -374,12 +376,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
+        controls.dampingFactor = isMobileDevice ? 0.08 : 0.05;
+        controls.rotateSpeed = isMobileDevice ? 0.75 : 1.0;
         controls.maxPolarAngle = Math.PI / 2 - 0.02; 
         controls.minDistance = 2.5;
         controls.maxDistance = 12;
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.45);
+        const ambientLight = new THREE.AmbientLight(0xffffff, isMobileDevice ? 0.65 : 0.45);
         scene.add(ambientLight);
 
         const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.4);
@@ -388,8 +391,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const dirLight = new THREE.DirectionalLight(0xffffff, 0.95);
         dirLight.position.set(5, 8, 4);
         dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 4096;
-        dirLight.shadow.mapSize.height = 4096;
+        dirLight.shadow.mapSize.width = isMobileDevice ? 1024 : 2048;
+        dirLight.shadow.mapSize.height = isMobileDevice ? 1024 : 2048;
         dirLight.shadow.camera.near = 0.5;
         dirLight.shadow.camera.far = 18;
         dirLight.shadow.camera.left = -6;
@@ -397,7 +400,7 @@ document.addEventListener('DOMContentLoaded', () => {
         dirLight.shadow.camera.top = 6;
         dirLight.shadow.camera.bottom = -6;
         dirLight.shadow.bias = -0.0003;
-        dirLight.shadow.radius = 4;
+        dirLight.shadow.radius = isMobileDevice ? 2 : 4;
         scene.add(dirLight);
 
         const pointLight = new THREE.PointLight(0xffffff, 0.35, 10);
@@ -409,7 +412,7 @@ document.addEventListener('DOMContentLoaded', () => {
             color: 0x090d16, 
             roughness: 0.15,
             metalness: 0.6,
-            clearcoat: 1.0,
+            clearcoat: isMobileDevice ? 0.2 : 1.0,
             clearcoatRoughness: 0.1
         });
         const floor = new THREE.Mesh(floorGeo, floorMat);
@@ -439,6 +442,7 @@ document.addEventListener('DOMContentLoaded', () => {
             camera.aspect = w / h;
             camera.updateProjectionMatrix();
             renderer.setSize(w, h);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobileDevice ? 1.0 : 1.5));
         });
 
         is3DInitialized = true;
@@ -849,10 +853,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         ledMesh.position.set(0, 0.89, 0.0);
                         unitGroup.add(ledMesh);
 
-                        // إضاءة صفراء دافئة تسقط على الرخامة بدون حساب ظلال (سريع وخفيف)
-                        const ledLight = new THREE.PointLight(0xfff5c0, 0.7, 1.5);
-                        ledLight.position.set(0, 0.85, 0.0);
-                        unitGroup.add(ledLight);
+                        // إضاءة صفراء دافئة تسقط على الرخامة (يتم تفعيلها على أجهزة الكمبيوتر فقط لمنع بطء الموبايل)
+                        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (window.innerWidth <= 768);
+                        if (!isMobile) {
+                            const ledLight = new THREE.PointLight(0xfff5c0, 0.7, 1.5);
+                            ledLight.position.set(0, 0.85, 0.0);
+                            unitGroup.add(ledLight);
+                        }
                     }
                 }
             } 
@@ -1276,9 +1283,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         ledMesh.position.set(0, 0.89, 0.0);
                         unitGroup.add(ledMesh);
 
-                        const ledLight = new THREE.PointLight(0xfff5c0, 0.7, 1.5);
-                        ledLight.position.set(0, 0.85, 0.0);
-                        unitGroup.add(ledLight);
+                        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (window.innerWidth <= 768);
+                        if (!isMobile) {
+                            const ledLight = new THREE.PointLight(0xfff5c0, 0.7, 1.5);
+                            ledLight.position.set(0, 0.85, 0.0);
+                            unitGroup.add(ledLight);
+                        }
                     }
                 }
             }
