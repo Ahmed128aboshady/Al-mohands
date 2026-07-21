@@ -510,30 +510,30 @@ document.addEventListener('DOMContentLoaded', () => {
         box1.castShadow = true;
         box1.receiveShadow = true;
         
-        // Box 2 (الجزء الجانبي الممتد للمطبخ - تم تعديل العرض إلى 0.32 ليتطابق تماماً ويمنع بروز العمود)
-        const box2Geo = trackGeo(new THREE.BoxGeometry(0.32, 0.7, 0.28));
+        // Box 2 (الجزء الجانبي الممتد للمطبخ بطول 0.38 ليتحاذى 100% مع الخزائن الجانبية بدون أي فواصل)
+        const box2Geo = trackGeo(new THREE.BoxGeometry(0.32, 0.7, 0.38));
         const box2 = new THREE.Mesh(box2Geo, cabMaterial);
         box2.castShadow = true;
         box2.receiveShadow = true;
         
-        // Door 1 (الباب المواجه للجنوب - الجدار الرئيسي)
+        // Door 1 (الباب المواجه للجدار الرئيسي)
         const door1Geo = trackGeo(new THREE.BoxGeometry(0.278, 0.68, 0.02));
         const door1 = new THREE.Mesh(door1Geo, doorMaterial);
         door1.castShadow = true;
         door1.add(new THREE.LineSegments(trackGeo(new THREE.EdgesGeometry(door1Geo)), doorLineMat));
         
-        // Door 2 (الباب الجانبي المواجه للشرق أو الغرب)
-        const door2Geo = trackGeo(new THREE.BoxGeometry(0.02, 0.68, 0.278));
+        // Door 2 (الباب الجانبي المواجه للوجه الخارجي للمطبخ)
+        const door2Geo = trackGeo(new THREE.BoxGeometry(0.02, 0.68, 0.378));
         const door2 = new THREE.Mesh(door2Geo, doorMaterial);
         door2.castShadow = true;
         door2.add(new THREE.LineSegments(trackGeo(new THREE.EdgesGeometry(door2Geo)), doorLineMat));
         
         if (type === 'left-top') {
             box1.position.set(0, 1.25, -0.14);
-            box2.position.set(-0.14, 1.25, 0.16); // ترحيل الصندوق 14 سم لليسار ليتحاذى مع الحائط والخزائن المجاورة
+            box2.position.set(-0.14, 1.25, 0.21); // تحاذي تام للجدار الأيسر
             
-            door1.position.set(0.16, 1.25, 0.03);
-            door2.position.set(-0.03, 1.25, 0.16); // ترحيل الباب ليتحاذى مع الأبواب المجاورة
+            door1.position.set(0.15, 1.25, 0.03);
+            door2.position.set(-0.31, 1.25, 0.21); // الباب على الوجه الخارجي الأيسر
             
             parentGroup.add(box1);
             parentGroup.add(box2);
@@ -542,21 +542,21 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (planHandles.value !== 'gola') {
                 const h1 = new THREE.Mesh(handleGeo, handleMaterial);
-                h1.position.set(0.05, 1.05, 0.05);
+                h1.position.set(0.03, 1.05, 0.05);
                 h1.castShadow = true;
                 parentGroup.add(h1);
                 
                 const h2 = new THREE.Mesh(handleGeo, handleMaterial);
-                h2.position.set(-0.05, 1.05, 0.05);
+                h2.position.set(-0.29, 1.05, 0.04);
                 h2.castShadow = true;
                 parentGroup.add(h2);
             }
         } else if (type === 'right-top') {
             box1.position.set(0, 1.25, -0.14);
-            box2.position.set(0.14, 1.25, 0.16); // ترحيل الصندوق 14 سم لليمين ليتحاذى مع الحائط والخزائن المجاورة
+            box2.position.set(0.14, 1.25, 0.21); // تحاذي تام للجدار الأيمن
             
-            door1.position.set(-0.16, 1.25, 0.03);
-            door2.position.set(-0.03, 1.25, 0.16); // ترحيل الباب ليتحاذى مع الأبواب المجاورة بالجانب الأيمن
+            door1.position.set(-0.15, 1.25, 0.03);
+            door2.position.set(0.31, 1.25, 0.21); // الباب على الوجه الخارجي الأيمن
             
             parentGroup.add(box1);
             parentGroup.add(box2);
@@ -565,12 +565,12 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (planHandles.value !== 'gola') {
                 const h1 = new THREE.Mesh(handleGeo, handleMaterial);
-                h1.position.set(-0.05, 1.05, 0.05);
+                h1.position.set(-0.03, 1.05, 0.05);
                 h1.castShadow = true;
                 parentGroup.add(h1);
                 
                 const h2 = new THREE.Mesh(handleGeo, handleMaterial);
-                h2.position.set(0.05, 1.05, 0.05);
+                h2.position.set(0.29, 1.05, 0.04);
                 h2.castShadow = true;
                 parentGroup.add(h2);
             }
@@ -1341,18 +1341,18 @@ document.addEventListener('DOMContentLoaded', () => {
             createCabinetUnit(-0.6, -1); // ملتصق تماماً بمركز الخط الخلفي
             createCabinetUnit(0, -1);
             createCabinetUnit(0.6, -1, 0, false, 'right-top'); // ركنة علوية مخصصة متلاحمة L
-            createCabinetUnit(0.6, -0.4, -Math.PI / 2); // ملتصق تماماً بمركز الخط الجانبي الأيمن
-            createCabinetUnit(0.6, 0.2, -Math.PI / 2);
+            createCabinetUnit(0.6, -0.2, -Math.PI / 2); // ملتصق تماماً 100% بالركنة بدون أي فواصل
+            createCabinetUnit(0.6, 0.6, -Math.PI / 2);
             controls.target.set(0, 0.5, -0.2);
         } 
         else if (shape === 'u-shape') {
             createCabinetUnit(-0.6, -1, 0, false, 'left-top'); // ركنة علوية يسرى مخصصة متلاحمة L
             createCabinetUnit(0, -1);
             createCabinetUnit(0.6, -1, 0, false, 'right-top'); // ركنة علوية يمنى مخصصة متلاحمة L
-            createCabinetUnit(0.6, -0.4, -Math.PI / 2); // ملتصق تماماً باليمين
-            createCabinetUnit(0.6, 0.2, -Math.PI / 2);
-            createCabinetUnit(-0.6, -0.4, Math.PI / 2);  // ملتصق تماماً باليسار
-            createCabinetUnit(-0.6, 0.2, Math.PI / 2);
+            createCabinetUnit(0.6, -0.2, -Math.PI / 2); // ملتصق تماماً 100% بالجانب الأيمن
+            createCabinetUnit(0.6, 0.6, -Math.PI / 2);
+            createCabinetUnit(-0.6, -0.2, Math.PI / 2);  // ملتصق تماماً 100% بالجانب الأيسر
+            createCabinetUnit(-0.6, 0.6, Math.PI / 2);
             controls.target.set(0, 0.5, -0.2);
         } 
         else if (shape === 'island') {
