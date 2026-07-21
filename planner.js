@@ -530,10 +530,10 @@ document.addEventListener('DOMContentLoaded', () => {
         door2.add(new THREE.LineSegments(trackGeo(new THREE.EdgesGeometry(door2Geo)), doorLineMat));
         
         if (type === 'left-top') {
-            box2.position.set(-0.30, 1.25, 0.18);
+            box2.position.set(-0.12, 1.25, 0.18); // محاذاة 100% مع الخزائن الجانبية اليسرى
             
             door1.position.set(0.15, 1.25, 0.05);
-            door2.position.set(-0.13, 1.25, 0.21); // محاذاة تامة لخط الأبواب اليسرى
+            door2.position.set(0.05, 1.25, 0.18); // محاذاة تامة لخط الأبواب اليسرى
             
             parentGroup.add(box1);
             parentGroup.add(box2);
@@ -547,15 +547,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 parentGroup.add(h1);
                 
                 const h2 = new THREE.Mesh(handleGeo, handleMaterial);
-                h2.position.set(-0.11, 1.05, 0.35);
+                h2.position.set(0.07, 1.05, 0.35);
                 h2.castShadow = true;
                 parentGroup.add(h2);
             }
         } else if (type === 'right-top') {
-            box2.position.set(0.30, 1.25, 0.18);
+            box2.position.set(0.12, 1.25, 0.18); // محاذاة 100% مع الخزائن الجانبية اليمنى
             
             door1.position.set(-0.15, 1.25, 0.05);
-            door2.position.set(0.13, 1.25, 0.21); // محاذاة تامة لخط الأبواب اليمنى
+            door2.position.set(-0.05, 1.25, 0.18); // محاذاة تامة لخط الأبواب اليمنى
             
             parentGroup.add(box1);
             parentGroup.add(box2);
@@ -569,7 +569,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 parentGroup.add(h1);
                 
                 const h2 = new THREE.Mesh(handleGeo, handleMaterial);
-                h2.position.set(0.11, 1.05, 0.35);
+                h2.position.set(-0.07, 1.05, 0.35);
                 h2.castShadow = true;
                 parentGroup.add(h2);
             }
