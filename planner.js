@@ -504,36 +504,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // دالة مساعدة لرسم خزانة علوية على شكل حرف L (متلاحمة بالكامل بالركنة بدون فواصل)
     function createLCornerUpperCabinet(parentGroup, type, cabMaterial, doorMaterial, doorLineMat, handleMaterial, handleGeo) {
-        // Box 1 (الجزء الخلفي المحاذي للجدار الرئيسي)
+        // Box 1 (الجزء الخلفي المحاذي للجدار الرئيسي - محاذي تماماً لعمق الخزائن الرئيسية z = -0.12)
         const box1Geo = trackGeo(new THREE.BoxGeometry(0.6, 0.7, 0.32));
         const box1 = new THREE.Mesh(box1Geo, cabMaterial);
+        box1.position.set(0, 1.25, -0.12);
         box1.castShadow = true;
         box1.receiveShadow = true;
         
-        // Box 2 (الجزء الجانبي الممتد للمطبخ بطول 0.38 ليتحاذى 100% مع الخزائن الجانبية بدون أي فواصل)
-        const box2Geo = trackGeo(new THREE.BoxGeometry(0.32, 0.7, 0.38));
+        // Box 2 (الجزء الجانبي الممتد للمطبخ بطول 0.44 ليتحاذى 100% مع الخزائن الجانبية)
+        const box2Geo = trackGeo(new THREE.BoxGeometry(0.32, 0.7, 0.44));
         const box2 = new THREE.Mesh(box2Geo, cabMaterial);
         box2.castShadow = true;
         box2.receiveShadow = true;
         
-        // Door 1 (الباب المواجه للجدار الرئيسي)
+        // Door 1 (الباب المواجه للجدار الرئيسي داخل المطبخ - محاذي لخط الأبواب z = 0.05)
         const door1Geo = trackGeo(new THREE.BoxGeometry(0.278, 0.68, 0.02));
         const door1 = new THREE.Mesh(door1Geo, doorMaterial);
         door1.castShadow = true;
         door1.add(new THREE.LineSegments(trackGeo(new THREE.EdgesGeometry(door1Geo)), doorLineMat));
         
-        // Door 2 (الباب الجانبي المواجه للوجه الخارجي للمطبخ)
-        const door2Geo = trackGeo(new THREE.BoxGeometry(0.02, 0.68, 0.378));
+        // Door 2 (الباب الجانبي المواجه لداخل المطبخ - محاذي لخط الأبواب الجانبية)
+        const door2Geo = trackGeo(new THREE.BoxGeometry(0.02, 0.68, 0.418));
         const door2 = new THREE.Mesh(door2Geo, doorMaterial);
         door2.castShadow = true;
         door2.add(new THREE.LineSegments(trackGeo(new THREE.EdgesGeometry(door2Geo)), doorLineMat));
         
         if (type === 'left-top') {
-            box1.position.set(0, 1.25, -0.14);
-            box2.position.set(-0.14, 1.25, 0.21); // تحاذي تام للجدار الأيسر
+            box2.position.set(-0.30, 1.25, 0.18);
             
-            door1.position.set(0.15, 1.25, 0.03);
-            door2.position.set(-0.31, 1.25, 0.21); // الباب على الوجه الخارجي الأيسر
+            door1.position.set(0.15, 1.25, 0.05);
+            door2.position.set(-0.13, 1.25, 0.21); // محاذاة تامة لخط الأبواب اليسرى
             
             parentGroup.add(box1);
             parentGroup.add(box2);
@@ -542,21 +542,20 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (planHandles.value !== 'gola') {
                 const h1 = new THREE.Mesh(handleGeo, handleMaterial);
-                h1.position.set(0.03, 1.05, 0.05);
+                h1.position.set(0.03, 1.05, 0.07);
                 h1.castShadow = true;
                 parentGroup.add(h1);
                 
                 const h2 = new THREE.Mesh(handleGeo, handleMaterial);
-                h2.position.set(-0.29, 1.05, 0.04);
+                h2.position.set(-0.11, 1.05, 0.35);
                 h2.castShadow = true;
                 parentGroup.add(h2);
             }
         } else if (type === 'right-top') {
-            box1.position.set(0, 1.25, -0.14);
-            box2.position.set(0.14, 1.25, 0.21); // تحاذي تام للجدار الأيمن
+            box2.position.set(0.30, 1.25, 0.18);
             
-            door1.position.set(-0.15, 1.25, 0.03);
-            door2.position.set(0.31, 1.25, 0.21); // الباب على الوجه الخارجي الأيمن
+            door1.position.set(-0.15, 1.25, 0.05);
+            door2.position.set(0.13, 1.25, 0.21); // محاذاة تامة لخط الأبواب اليمنى
             
             parentGroup.add(box1);
             parentGroup.add(box2);
@@ -565,12 +564,12 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (planHandles.value !== 'gola') {
                 const h1 = new THREE.Mesh(handleGeo, handleMaterial);
-                h1.position.set(-0.03, 1.05, 0.05);
+                h1.position.set(-0.03, 1.05, 0.07);
                 h1.castShadow = true;
                 parentGroup.add(h1);
                 
                 const h2 = new THREE.Mesh(handleGeo, handleMaterial);
-                h2.position.set(0.29, 1.05, 0.04);
+                h2.position.set(0.11, 1.05, 0.35);
                 h2.castShadow = true;
                 parentGroup.add(h2);
             }
