@@ -133,111 +133,126 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 4. حاسبة الأسعار التفاعلية (EGP Pricing Calculator)
     // ==========================================
-    const calcProduct = document.getElementById('calc-product');
+    const calcType = document.getElementById('calc-type');
     const calcWidth = document.getElementById('calc-width');
     const calcHeight = document.getElementById('calc-height');
-    const calcCount = document.getElementById('calc-count');
-    const windowOptions = document.getElementById('window-options');
+    const calcProfile = document.getElementById('calc-profile');
     const calcGlass = document.getElementById('calc-glass');
-    const calcFlyscreen = document.getElementById('calc-flyscreen');
-    const calcBtn = document.getElementById('calculate-btn');
+    const glassGroup = document.getElementById('glass-group');
+    const addHydraulic = document.getElementById('add-hydraulic');
+    const addMatte = document.getElementById('add-matte');
+    const addLed = document.getElementById('add-led');
+    const addLedContainer = document.getElementById('add-led-container');
     const priceVal = document.getElementById('price-val');
     const priceDetails = document.getElementById('price-details');
     const calcWhatsappBtn = document.getElementById('calc-whatsapp-btn');
 
-    if (calcProduct) {
-        calcProduct.addEventListener('change', () => {
-            const prod = calcProduct.value;
-            if (prod === 'kitchen') {
-                windowOptions.style.display = 'none';
-                document.getElementById('calc-width-label').innerHTML = '<i class="fa-solid fa-ruler-horizontal form-icon"></i> الطول الإجمالي للمطبخ (متر طولي):';
-                document.getElementById('calc-height-group').style.display = 'none'; 
-            } else if (prod === 'window') {
-                windowOptions.style.display = 'block';
-                document.getElementById('calc-width-label').innerHTML = '<i class="fa-solid fa-ruler-horizontal form-icon"></i> عرض الشباك (متر):';
-                document.getElementById('calc-height-group').style.display = 'block';
-            } else if (prod === 'door') {
-                windowOptions.style.display = 'none';
-                document.getElementById('calc-width-label').innerHTML = '<i class="fa-solid fa-ruler-horizontal form-icon"></i> عرض الباب (متر):';
-                document.getElementById('calc-height-group').style.display = 'block';
-            }
-        });
+    const profileOptions = {
+        'kitchen': [
+            { value: 'clad-ferrari', label: 'كلادينج فيراري دبل شيت (أعلى جودة)', price: 5800 },
+            { value: 'khachmonium', label: 'خشمونيوم قطاع ثقيل مقاوم للمياه', price: 6200 },
+            { value: 'fiberglass', label: 'ألوميتال فيبر جلاس اقتصادي متين', price: 4800 }
+        ],
+        'door': [
+            { value: 'ps-large', label: 'قطاع بي إس كبير (PS Large 9600)', price: 5200 },
+            { value: 'ps-small', label: 'قطاع بي إس صغير (PS Small 6600)', price: 4500 },
+            { value: 'tango', label: 'قطاع تانجو / جامبو ثقيل', price: 5800 }
+        ],
+        'window': [
+            { value: 'ps-small', label: 'قطاع بي إس صغير عازل (PS 6600)', price: 4200 },
+            { value: 'ps-large', label: 'قطاع بي إس كبير (PS 9600)', price: 4800 },
+            { value: 'jumbo', label: 'قطاع جامبو 100 عازل للصوت والأتربة', price: 5500 }
+        ],
+        'pvc-door': [
+            { value: 'upvc-turkish', label: 'قطاع UPVC تركي مسلح بالحديد المجلفن', price: 6500 },
+            { value: 'pvc-kompen', label: 'قطاع PVC كومبن / وين تك عازل 100%', price: 7200 }
+        ],
+        'pvc-window': [
+            { value: 'upvc-sliding', label: 'قطاع UPVC جرار دبل عازل للصوت والحرارة', price: 4900 },
+            { value: 'upvc-tilt', label: 'قطاع UPVC مفصلي قلاب (Tilt & Turn)', price: 5400 }
+        ],
+        'armored-door': [
+            { value: 'armored-turkish', label: 'باب مصفح تركي أصلي (تصفيح كامل + 2 كالون)', price: 14500 },
+            { value: 'armored-italian', label: 'باب مصفح إيطالي سوبر لوكس (عزل صوت وحريق)', price: 18500 }
+        ]
+    };
+
+    function updateProfileOptions() {
+        if (!calcType || !calcProfile) return;
+        const type = calcType.value;
+        const options = profileOptions[type] || profileOptions['kitchen'];
+        calcProfile.innerHTML = options.map(opt => `<option value="${opt.value}" data-price="${opt.price}">${opt.label}</option>`).join('');
+
+        if (glassGroup) {
+            glassGroup.style.display = (type === 'kitchen' || type === 'armored-door') ? 'none' : 'block';
+        }
+        if (addLedContainer) {
+            addLedContainer.style.display = (type === 'kitchen') ? 'flex' : 'none';
+        }
+        calculateTotal();
     }
 
-    if (calcBtn) {
-        calcBtn.addEventListener('click', () => {
-            const prod = calcProduct.value;
-            const w = parseFloat(calcWidth.value) || 0;
-            const h = parseFloat(calcHeight.value) || 0;
-            const count = parseInt(calcCount.value) || 1;
+    function calculateTotal() {
+        if (!calcType || !priceVal) return;
+        const type = calcType.value;
+        const w = parseFloat(calcWidth?.value) || 1;
+        const h = parseFloat(calcHeight?.value) || 1;
+        const selectedOpt = calcProfile?.options[calcProfile.selectedIndex];
+        const baseRate = selectedOpt ? parseFloat(selectedOpt.getAttribute('data-price')) : 5000;
+        const profileName = selectedOpt ? selectedOpt.textContent : '';
 
-            if (w <= 0 || (prod !== 'kitchen' && h <= 0)) {
-                alert('الرجاء إدخال قياسات صحيحة أكبر من الصفر!');
-                return;
+        let total = 0;
+        let area = w * h;
+        let detailsHtml = '';
+
+        if (type === 'door' || type === 'pvc-door' || type === 'armored-door') {
+            total = baseRate;
+            detailsHtml += `<div>• السعر الأساسي (${profileName}): <strong>${baseRate.toLocaleString()} ج.م</strong></div>`;
+        } else {
+            const baseCost = area * baseRate;
+            total = baseCost;
+            detailsHtml += `<div>• المساحة (${area.toFixed(2)} م²) × ${baseRate.toLocaleString()} ج.م: <strong>${Math.round(baseCost).toLocaleString()} ج.م</strong></div>`;
+        }
+
+        if (type !== 'kitchen' && type !== 'armored-door' && calcGlass) {
+            const gVal = calcGlass.value;
+            let gExtra = 0;
+            if (gVal === 'double-plain') gExtra = area * 500;
+            if (gVal === 'double-reflective') gExtra = area * 750;
+            if (gExtra > 0) {
+                total += gExtra;
+                detailsHtml += `<div>• إضافي الزجاج الدبل العازل: <strong>${Math.round(gExtra).toLocaleString()} ج.م</strong></div>`;
             }
+        }
 
-            let total = 0;
-            let details = '';
+        if (addHydraulic && addHydraulic.checked) {
+            const hydExtra = 850;
+            total += hydExtra;
+            detailsHtml += `<div>• إكسسوارات ومفصلات هيدروليك (Soft Close): <strong>${hydExtra} ج.م</strong></div>`;
+        }
+        if (type === 'kitchen' && addLed && addLed.checked) {
+            const ledExtra = 650;
+            total += ledExtra;
+            detailsHtml += `<div>• نظام إضاءة LED مدمجة: <strong>${ledExtra} ج.م</strong></div>`;
+        }
 
-            if (prod === 'kitchen') {
-                // سعر المتر الطولي للمطبخ بي إس 5500 ج.م
-                const meterPrice = 5500;
-                const baseCost = w * meterPrice * count;
-                total = baseCost;
-                details = `<li>مطبخ ألوميتال قطاع (بي إس) بطول ${w} متر × ${count} وحدات: <strong>${baseCost.toLocaleString()} ج.م</strong></li>`;
-            } 
-            else if (prod === 'window') {
-                // شباك منزلق بي إس 4200 ج.م للمتر المربع
-                const area = w * h * count;
-                const sqMeterPrice = 4200;
-                let baseCost = area * sqMeterPrice;
-                
-                let glassCost = 0;
-                if (calcGlass.value === 'double') {
-                    glassCost = area * 800; // إضافي زجاج دبل عاكس
-                }
-                
-                let screenCost = 0;
-                if (calcFlyscreen.checked) {
-                    screenCost = count * 600; // سلك بليسيه منزلق
-                }
+        priceVal.textContent = Math.round(total).toLocaleString();
+        if (priceDetails) priceDetails.innerHTML = detailsHtml;
 
-                total = baseCost + glassCost + screenCost;
-                details = `
-                    <li>شباك ألوميتال منزلق (بي إس) بمساحة إجمالية ${area.toFixed(2)} م²: <strong>${baseCost.toLocaleString()} ج.م</strong></li>
-                    ${glassCost > 0 ? `<li>إضافي زجاج دبل عاكس عازل للصوت والحرارة: <strong>${glassCost.toLocaleString()} ج.م</strong></li>` : ''}
-                    ${screenCost > 0 ? `<li>إضافي سلك بليسيه مانع للأتربة والحشرات: <strong>${screenCost.toLocaleString()} ج.م</strong></li>` : ''}
-                `;
-            } 
-            else if (prod === 'door') {
-                // باب حمام أو مطبخ بي إس بسعر ثابت 4800 ج.م للباب
-                const unitPrice = 4800;
-                const baseCost = count * unitPrice;
-                total = baseCost;
-                details = `<li>باب ألوميتال قطاع (بي إس) حمام/مطبخ عدد ${count}: <strong>${baseCost.toLocaleString()} ج.م</strong></li>`;
-            }
-
-            priceVal.textContent = Math.round(total).toLocaleString();
-            priceDetails.innerHTML = details;
-
-            // تحديث رابط الواتساب بالتفاصيل المحسوبة
-            let prodName = 'مطبخ';
-            if (prod === 'window') prodName = 'شباك شقة';
-            if (prod === 'door') prodName = 'باب ألوميتال';
-
-            let msg = `مرحباً ورشة المهندس، قمت بحساب تكلفة تقديرية لـ ${prodName} عبر حاسبة الأسعار:\n`;
-            msg += `- الأبعاد: عرض ${w} م ${prod !== 'kitchen' ? `× ارتفاع ${h} م` : ''}\n`;
-            msg += `- العدد المطلوبة: ${count}\n`;
-            if (prod === 'window') {
-                const glassText = calcGlass.options[calcGlass.selectedIndex].text;
-                msg += `- نوع الزجاج: ${glassText}\n`;
-                msg += `- سلك حشرات: ${calcFlyscreen.checked ? 'نعم' : 'لا'}\n`;
-            }
-            msg += `- التكلفة الإجمالية التقديرية: ${Math.round(total).toLocaleString()} ج.م\n`;
-            msg += `أود تأكيد موعد للمعاينة الفنية ورفع المقاسات الفعلية.`;
-
+        if (calcWhatsappBtn) {
+            const typeText = calcType.options[calcType.selectedIndex].textContent;
+            const msg = `مرحباً المهندس للألوميتال، قمت بحساب تكلفة مبدئية على الموقع:\n- النوع: ${typeText}\n- القطاع: ${profileName}\n- المقاس: ${w}م × ${h}م\n- التكلفة التقديرية: ${Math.round(total).toLocaleString()} ج.م\nأود الاستفسار وحجز معاينة.`;
             calcWhatsappBtn.href = `https://wa.me/201234567890?text=${encodeURIComponent(msg)}`;
+        }
+    }
+
+    if (calcType) {
+        calcType.addEventListener('change', updateProfileOptions);
+        [calcWidth, calcHeight, calcProfile, calcGlass, addHydraulic, addMatte, addLed].forEach(el => {
+            if (el) el.addEventListener('input', calculateTotal);
+            if (el) el.addEventListener('change', calculateTotal);
         });
+        updateProfileOptions();
     }
 });
 
